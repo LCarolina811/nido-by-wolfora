@@ -146,45 +146,10 @@ $navItems = [
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-  // URL base disponible globalmente en JS
-  const APP_URL = <?= json_encode(APP_URL) ?>;
-
-  // Sidebar toggle (móvil)
-  const sidebar        = document.getElementById('sidebar');
-  const sidebarOverlay = document.getElementById('sidebarOverlay');
-  const sidebarToggle  = document.getElementById('sidebarToggle');
-
-  function openSidebar()  { sidebar.classList.add('open');    sidebarOverlay.classList.add('visible'); }
-  function closeSidebar() { sidebar.classList.remove('open'); sidebarOverlay.classList.remove('visible'); }
-
-  sidebarToggle.addEventListener('click', openSidebar);
-  sidebarOverlay.addEventListener('click', closeSidebar);
-
-  // Logout
-  document.getElementById('btnLogout').addEventListener('click', async () => {
-    await fetch(APP_URL + '/api/auth.php', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ action: 'logout' }),
-    });
-    window.location.href = APP_URL + '/views/login.php';
-  });
-
-  // Toast utility (global)
-  function showToast(message, type = 'success') {
-    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `<span>${icons[type] ?? 'ℹ️'}</span><span>${message}</span>`;
-    document.getElementById('toastContainer').appendChild(toast);
-    setTimeout(() => toast.remove(), 4200);
-  }
-
-  // Formato de moneda (global)
-  function formatCOP(value) {
-    return '$ ' + Number(value).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  }
+  // URL base disponible globalmente para todos los módulos JS
+  window.APP_URL = <?= json_encode(APP_URL) ?>;
 </script>
+<script src="<?= url('assets/js/shared.js') ?>"></script>
 
 <?php if (!empty($extraJs)): ?>
   <?= $extraJs ?>

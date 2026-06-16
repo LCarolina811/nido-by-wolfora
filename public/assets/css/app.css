@@ -867,3 +867,50 @@ h4 { font-size: 1rem;     font-weight: 600; }
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Switch de estado (pagado / pendiente) ──────────────────── */
+.status-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.status-switch .switch-track {
+  width: 38px; height: 21px;
+  border-radius: 20px;
+  background: var(--neutral-light);
+  position: relative;
+  transition: background var(--transition);
+  flex-shrink: 0;
+}
+
+.status-switch .switch-thumb {
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  background: var(--neutral);
+  position: absolute;
+  top: 3px; left: 3px;
+  transition: transform var(--transition), background var(--transition);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+
+.status-switch.is-paid .switch-track { background: var(--success-light); }
+.status-switch.is-paid .switch-thumb {
+  background: var(--success);
+  transform: translateX(17px);
+}
+
+.status-switch .switch-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.status-switch.is-paid .switch-label { color: var(--success); }
+
+.status-switch.is-loading { opacity: 0.5; pointer-events: none; }
+
+/* ── Input de moneda formateado ──────────────────────────────── */
+.money-input { font-variant-numeric: tabular-nums; }
