@@ -25,7 +25,11 @@ function is_logged_in(): bool
 function require_login(): void
 {
     if (!is_logged_in()) {
-        header('Location: /index.php');
+        // app.php debe estar cargado antes de llamar a require_login()
+        if (function_exists('redirect')) {
+            redirect('views/login.php');
+        }
+        header('Location: views/login.php');
         exit;
     }
 }
