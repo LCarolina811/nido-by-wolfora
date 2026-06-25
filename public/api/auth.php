@@ -41,7 +41,7 @@ function handle_login(array $data): never
 
     try {
         $stmt = db()->prepare(
-            'SELECT id, nombre, email, password_hash, avatar_color
+            'SELECT id, nido_id, nombre, email, password_hash, avatar_color
                FROM usuarios
               WHERE email = :email AND activo = 1
               LIMIT 1'

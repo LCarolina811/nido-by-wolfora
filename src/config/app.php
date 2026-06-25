@@ -22,15 +22,16 @@ if (!defined('APP_URL')) {
         $scheme   = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
-        // Directorio público relativo al document root
+        // Directorio público relativo al document root (resuelto, sin ../../)
         $docRoot  = rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/\\');
-        $pubDir   = rtrim(__DIR__ . '/../../public', '/\\');
+        $pubDir   = rtrim(realpath(__DIR__ . '/../../public') ?: (__DIR__ . '/../../public'), '/\\');
 
         // Normaliza separadores para comparar en Windows
         $docRoot  = str_replace('\\', '/', $docRoot);
         $pubDir   = str_replace('\\', '/', $pubDir);
 
-        $basePath = str_starts_with($pubDir, $docRoot)
+        // Comparación insensible a mayúsculas (unidades de Windows: C:/ vs c:/)
+        $basePath = stripos($pubDir, $docRoot) === 0
             ? substr($pubDir, strlen($docRoot))
             : '';
 

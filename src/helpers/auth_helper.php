@@ -49,6 +49,26 @@ function current_user_color(): string
     return $_SESSION['usuario_color'] ?? '#6C63FF';
 }
 
+function current_nido_id(): int
+{
+    $nido = (int) ($_SESSION['nido_id'] ?? 0);
+
+    // Sesión anterior a la migración de Nidos: reconstruir desde BD
+    if ($nido === 0 && isset($_SESSION['usuario_id']) && function_exists('db')) {
+        try {
+            $stmt = db()->prepare('SELECT nido_id FROM usuarios WHERE id = :id AND activo = 1 LIMIT 1');
+            $stmt->execute([':id' => $_SESSION['usuario_id']]);
+            $row = $stmt->fetchColumn();
+            if ($row) {
+                $nido = (int) $row;
+                $_SESSION['nido_id'] = $nido;
+            }
+        } catch (Throwable) {}
+    }
+
+    return $nido;
+}
+
 function login_user(array $usuario): void
 {
     session_start_safe();
@@ -57,6 +77,7 @@ function login_user(array $usuario): void
     $_SESSION['usuario_nombre'] = $usuario['nombre'];
     $_SESSION['usuario_email']  = $usuario['email'];
     $_SESSION['usuario_color']  = $usuario['avatar_color'];
+    $_SESSION['nido_id']        = (int) $usuario['nido_id'];
 }
 
 function logout_user(): void

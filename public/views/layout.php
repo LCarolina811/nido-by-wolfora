@@ -16,13 +16,24 @@ $userName    = current_user_name();
 $userColor   = current_user_color();
 $userInitial = strtoupper(mb_substr($userName, 0, 1));
 
+$nidoId = current_nido_id();
+
 $periodoActivo = '';
 try {
-    $stmt = db()->query('SELECT anio, mes FROM periodos WHERE activo = 1 LIMIT 1');
+    $stmt = db()->prepare('SELECT anio, mes FROM periodos WHERE nido_id = :nido AND activo = 1 LIMIT 1');
+    $stmt->execute([':nido' => $nidoId]);
     $p = $stmt->fetch();
     if ($p) {
         $periodoActivo = nombre_mes((int)$p['mes']) . ' ' . $p['anio'];
     }
+} catch (PDOException) { }
+
+// Miembros del Nido, para los enlaces de vista personal (dinámico, sin nombres hardcodeados)
+$miembrosNido = [];
+try {
+    $stmt = db()->prepare('SELECT id, nombre, avatar_color FROM usuarios WHERE nido_id = :nido AND activo = 1 ORDER BY nombre');
+    $stmt->execute([':nido' => $nidoId]);
+    $miembrosNido = $stmt->fetchAll();
 } catch (PDOException) { }
 
 $navItems = [
@@ -44,8 +55,8 @@ $navItems = [
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="<?= url('assets/css/app.css') ?>" />
-  <?php if (!empty($extraCss)): ?>
-    <?= $extraCss ?>
+  <?php if (!empty($extraCssFile)): ?>
+    <link rel="stylesheet" href="<?= htmlspecialchars($extraCssFile) ?>" />
   <?php endif; ?>
 </head>
 <body>
@@ -78,22 +89,20 @@ $navItems = [
         </div>
       <?php endforeach; ?>
 
-      <span class="nav-section-label" style="margin-top:1rem">Vistas</span>
-
-      <div class="nav-item">
-        <a href="<?= url('views/gastos.php?vista=carolina') ?>"
-           class="nav-link <?= $activeNav === 'carolina' ? 'active' : '' ?>">
-          <span class="nav-icon">👩</span>
-          Carolina
-        </a>
-      </div>
-      <div class="nav-item">
-        <a href="<?= url('views/gastos.php?vista=javier') ?>"
-           class="nav-link <?= $activeNav === 'javier' ? 'active' : '' ?>">
-          <span class="nav-icon">👨</span>
-          Javier
-        </a>
-      </div>
+      <?php if ($miembrosNido): ?>
+        <span class="nav-section-label" style="margin-top:1rem">Vistas personales</span>
+        <?php foreach ($miembrosNido as $m): ?>
+          <div class="nav-item">
+            <a href="<?= url('views/gastos.php?vista_usuario=' . $m['id']) ?>"
+               class="nav-link <?= $activeNav === 'miembro-' . $m['id'] ? 'active' : '' ?>">
+              <span class="nav-icon" style="width:18px;height:18px;border-radius:50%;background:<?= htmlspecialchars($m['avatar_color']) ?>;display:inline-flex;align-items:center;justify-content:center;font-size:.6rem;color:#fff;font-weight:700">
+                <?= htmlspecialchars(strtoupper(mb_substr($m['nombre'], 0, 1))) ?>
+              </span>
+              <?= htmlspecialchars($m['nombre']) ?>
+            </a>
+          </div>
+        <?php endforeach; ?>
+      <?php endif; ?>
     </nav>
 
     <div class="sidebar-footer">

@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../src/config/database.php';
 $pageTitle    = 'Dashboard';
 $pageSubtitle = 'Resumen financiero del mes';
 $activeNav    = 'dashboard';
+$extraCssFile = url('assets/css/dashboard.css');
 
 ob_start();
 ?>
@@ -173,101 +174,7 @@ ob_start();
 <?php
 $content = ob_get_clean();
 
-$extraCss = '<style>
-/* ── Dashboard extras ───────────────────────────── */
-.skeleton { color: var(--border) !important; }
-
-.progress-bar-wrap {
-  width: 100%;
-  height: 5px;
-  background: var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  margin-top: 0.5rem;
-}
-.progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary), #a78bfa);
-  border-radius: 10px;
-  transition: width 0.8s ease;
-}
-.progress-bar.over { background: linear-gradient(90deg, var(--warning), var(--danger)); }
-
-/* Leyenda del donut */
-.chart-legend {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  font-size: 0.8125rem;
-  max-height: 160px;
-  overflow-y: auto;
-}
-.chart-legend li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  justify-content: space-between;
-}
-.chart-legend .leg-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.chart-legend .leg-name { flex: 1; color: var(--text-secondary); }
-.chart-legend .leg-val  { font-weight: 700; color: var(--text-primary); }
-
-/* Lista movimientos */
-.movimientos-list { max-height: 340px; overflow-y: auto; }
-.movimientos-list li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid var(--border);
-  transition: background var(--transition);
-}
-.movimientos-list li:last-child { border-bottom: none; }
-.movimientos-list li:hover { background: var(--bg-card-hover); }
-.mov-icon {
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-.mov-info { flex: 1; min-width: 0; }
-.mov-concepto {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.mov-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem; }
-.mov-valor {
-  font-size: 0.9rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.mov-valor.gasto   { color: var(--danger); }
-.mov-valor.ingreso { color: var(--success); }
-
-/* Tabla vencimientos */
-.venc-chip {
-  display: inline-block;
-  padding: 0.2rem 0.6rem;
-  border-radius: 20px;
-  font-size: 0.725rem;
-  font-weight: 700;
-}
-
-/* Responsive grids del dashboard */
-@media (max-width: 900px) {
-  .dashboard-row { grid-template-columns: 1fr !important; }
-}
-</style>';
+// Estilos en assets/css/dashboard.css (cargado via $extraCssFile arriba)
 
 $extraJs = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="' . url('assets/js/dashboard.js') . '"></script>';

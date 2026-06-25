@@ -1,0 +1,272 @@
+/* ============================================================
+   gastos.css — Estilos específicos del módulo de Gastos
+   ============================================================ */
+
+/* Grid de stat cards de 4 columnas */
+.stats-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* Barra de filtros */
+.filtros-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+.filtro-group  { display: flex; flex-direction: column; gap: 0.3rem; }
+.filtro-label  {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.filtro-select {
+  height: 36px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: var(--bg-body);
+  cursor: pointer;
+  min-width: 130px;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.filtro-select:focus { border-color: var(--primary); }
+
+/* Form layout */
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.875rem; }
+
+/* Cuota info box */
+.info-box {
+  background: var(--primary-light);
+  border: 1px solid rgba(108,99,255,0.2);
+  border-radius: var(--border-radius-sm);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--primary);
+  line-height: 1.6;
+}
+.info-box.success {
+  background: var(--success-light);
+  border-color: rgba(16,185,129,0.2);
+  color: var(--success);
+}
+.info-box.warning {
+  background: var(--warning-light);
+  border-color: rgba(245,158,11,0.2);
+  color: var(--warning);
+}
+
+/* Chips de tipo de gasto */
+.tipo-chip {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.tipo-fijo     { background: rgba(6,182,212,0.12);  color: #06b6d4; }
+.tipo-cuotas   { background: rgba(245,158,11,0.12); color: var(--warning); }
+.tipo-variable { background: var(--neutral-light);  color: var(--neutral); }
+
+/* Acciones en tabla */
+.acciones { display: flex; gap: 0.4rem; justify-content: center; }
+
+/* Etiqueta de quincena / cuotas */
+.quin-chip {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: block;
+}
+
+/* Chips de participantes en tabla */
+.participantes-chips { display: flex; gap: 0.25rem; flex-wrap: wrap; margin-top: 0.25rem; }
+.participante-chip {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 20px;
+  background: var(--bg-body);
+  color: var(--text-secondary);
+}
+.participante-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+/* ── Sección de distribución del gasto ───────────────────────── */
+.compartido-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-body);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color var(--transition), background var(--transition);
+}
+.compartido-toggle:hover { border-color: var(--primary); }
+.compartido-toggle.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.compartido-toggle .toggle-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.compartido-toggle .toggle-info { flex: 1; }
+.compartido-toggle .toggle-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.compartido-toggle .toggle-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+.compartido-toggle .toggle-indicator {
+  width: 36px; height: 20px;
+  border-radius: 20px;
+  background: var(--neutral-light);
+  position: relative;
+  flex-shrink: 0;
+  transition: background var(--transition);
+}
+.compartido-toggle .toggle-indicator::after {
+  content: '';
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--neutral);
+  position: absolute;
+  top: 3px; left: 3px;
+  transition: transform var(--transition), background var(--transition);
+}
+.compartido-toggle.active .toggle-indicator {
+  background: var(--primary-light);
+}
+.compartido-toggle.active .toggle-indicator::after {
+  background: var(--primary);
+  transform: translateX(16px);
+}
+
+/* Panel de distribución compartida */
+.compartido-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  margin-top: 0.625rem;
+}
+
+.dist-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+.dist-tab {
+  flex: 1;
+  padding: 0.65rem 1rem;
+  border: none;
+  background: var(--bg-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+  border-bottom: 2px solid transparent;
+}
+.dist-tab:hover { color: var(--primary); background: var(--primary-light); }
+.dist-tab.active {
+  color: var(--primary);
+  background: var(--bg-card);
+  border-bottom-color: var(--primary);
+}
+
+.dist-panel-content { padding: 1rem; }
+
+/* Miembros — partes iguales (preview) */
+.partes-iguales-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.parte-igual-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+.miembro-avatar-sm {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.miembro-nombre-sm { flex: 1; font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+.miembro-monto-sm {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Miembros — personalizado */
+.personalizado-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+.personalizado-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+.personalizado-row .monto-inp {
+  width: 140px;
+  height: 36px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.875rem;
+  text-align: right;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-body);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.personalizado-row .monto-inp:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.1);
+  background: #fff;
+}
+.total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0 0;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.875rem;
+}
+.total-row .total-label { font-weight: 600; color: var(--text-secondary); }
+.total-row .total-valor { font-weight: 800; }
+.total-row .total-valor.ok      { color: var(--success); }
+.total-row .total-valor.pending { color: var(--warning); }
+.total-row .total-valor.error   { color: var(--danger); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .stats-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .stats-grid-4 { grid-template-columns: 1fr; }
+}

@@ -4,20 +4,58 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../src/config/app.php';
 require_once __DIR__ . '/../../src/config/database.php';
+require_once __DIR__ . '/../../src/helpers/auth_helper.php';
 
-// Vista: carolina | javier | (vacío = todos)
-$vista = in_array($_GET['vista'] ?? '', ['carolina','javier']) ? $_GET['vista'] : '';
+session_start_safe();
+$nidoId = current_nido_id();
 
-$pageTitle = match($vista) {
-    'carolina' => 'Gastos — Carolina',
-    'javier'   => 'Gastos — Javier',
-    default    => 'Gastos',
+// Vista personal: ?vista_usuario=<id de un miembro del Nido>
+$vistaUsuarioId = isset($_GET['vista_usuario']) ? (int) $_GET['vista_usuario'] : 0;
+$vistaUsuarioNombre = '';
+if ($vistaUsuarioId) {
+    $stmt = db()->prepare('SELECT nombre FROM usuarios WHERE id = :id AND nido_id = :nido');
+    $stmt->execute([':id' => $vistaUsuarioId, ':nido' => $nidoId]);
+    $vistaUsuarioNombre = $stmt->fetchColumn() ?: '';
+    if (!$vistaUsuarioNombre) $vistaUsuarioId = 0;
+}
+
+// Modo lectura: el usuario está viendo gastos de OTRO miembro del Nido
+$isReadOnly = $vistaUsuarioId > 0 && $vistaUsuarioId !== current_user_id();
+
+$pageTitle = match(true) {
+    $isReadOnly         => "👁 Gastos de {$vistaUsuarioNombre}",
+    (bool)$vistaUsuarioId => "Gastos — {$vistaUsuarioNombre}",
+    default             => 'Gastos',
 };
-$pageSubtitle = $vista ? 'Gastos personales + compartidos' : 'Todos los gastos del mes';
-$activeNav    = $vista ?: 'gastos';
+$pageSubtitle = $isReadOnly
+    ? 'Vista de solo lectura — puedes consultar pero no modificar'
+    : ($vistaUsuarioId ? 'Tu porción de gastos personales + compartidos' : 'Todos los gastos del Nido');
+$activeNav = $vistaUsuarioId ? 'miembro-' . $vistaUsuarioId : 'gastos';
+
+$extraCssFile = url('assets/css/gastos.css');
 
 ob_start();
 ?>
+
+<?php if ($isReadOnly): ?>
+<!-- Banner de solo lectura -->
+<div class="readonly-banner" style="
+  display:flex; align-items:center; gap:.75rem;
+  background:rgba(245,158,11,0.1);
+  border:1px solid rgba(245,158,11,0.3);
+  border-radius:var(--border-radius-sm);
+  padding:.75rem 1.125rem;
+  margin-bottom:1.125rem;
+  font-size:.875rem;
+  color:var(--warning);
+">
+  <span style="font-size:1.125rem">👁</span>
+  <span>
+    Estás viendo los gastos de <strong><?= htmlspecialchars($vistaUsuarioNombre) ?></strong>.
+    Esta es una vista de <strong>solo lectura</strong> — no puedes crear, editar ni modificar registros ajenos.
+  </span>
+</div>
+<?php endif; ?>
 
 <!-- ── Resumen rápido ──────────────────────────────────────────── -->
 <div class="stats-grid stats-grid-4" id="resumenGastos" style="margin-bottom:1.25rem">
@@ -37,8 +75,8 @@ ob_start();
     <div class="stat-footer" id="rCntPagados">— liquidados</div>
   </div>
   <div class="stat-card primary">
-    <div class="stat-header"><span class="stat-label">Vista</span><div class="stat-icon primary"><?= $vista === 'carolina' ? '👩' : ($vista === 'javier' ? '👨' : '👫') ?></div></div>
-    <div class="stat-value" style="font-size:1.1rem;text-transform:capitalize"><?= $vista ?: 'General' ?></div>
+    <div class="stat-header"><span class="stat-label">Vista</span><div class="stat-icon primary"><?= $vistaUsuarioId ? '👤' : '👫' ?></div></div>
+    <div class="stat-value" style="font-size:1.1rem;text-transform:capitalize"><?= htmlspecialchars($vistaUsuarioNombre ?: 'General') ?></div>
     <div class="stat-footer">Filtro activo</div>
   </div>
 </div>
@@ -47,21 +85,14 @@ ob_start();
 <div class="card mb-2">
   <div class="card-body" style="padding:1rem 1.375rem;">
     <div class="filtros-bar">
-
       <div class="filtro-group">
         <label class="filtro-label">Período</label>
-        <select id="filPeriodo" class="filtro-select">
-          <option value="">Cargando...</option>
-        </select>
+        <select id="filPeriodo" class="filtro-select"><option value="">Cargando...</option></select>
       </div>
-
       <div class="filtro-group">
         <label class="filtro-label">Categoría</label>
-        <select id="filCategoria" class="filtro-select">
-          <option value="">Todas</option>
-        </select>
+        <select id="filCategoria" class="filtro-select"><option value="">Todas</option></select>
       </div>
-
       <div class="filtro-group">
         <label class="filtro-label">Tipo</label>
         <select id="filTipo" class="filtro-select">
@@ -71,7 +102,6 @@ ob_start();
           <option value="variable">Variable</option>
         </select>
       </div>
-
       <div class="filtro-group">
         <label class="filtro-label">Estado</label>
         <select id="filEstado" class="filtro-select">
@@ -80,7 +110,6 @@ ob_start();
           <option value="pagado">Pagado</option>
         </select>
       </div>
-
       <div class="filtro-group">
         <label class="filtro-label">Quincena</label>
         <select id="filQuincena" class="filtro-select">
@@ -89,11 +118,9 @@ ob_start();
           <option value="segunda">Segunda</option>
         </select>
       </div>
-
       <div class="filtro-group" style="align-self:flex-end;">
         <button class="btn btn-outline btn-sm" id="btnLimpiar">↺ Limpiar</button>
       </div>
-
     </div>
   </div>
 </div>
@@ -107,7 +134,9 @@ ob_start();
     </span>
     <div class="d-flex gap-1">
       <button class="btn btn-sm btn-outline" id="btnExportar" title="Exportar CSV">⬇ CSV</button>
-      <button class="btn btn-primary btn-sm" id="btnNuevo">+ Nuevo gasto</button>
+      <?php if (!$isReadOnly): ?>
+        <button class="btn btn-primary btn-sm" id="btnNuevo">+ Nuevo gasto</button>
+      <?php endif; ?>
     </div>
   </div>
 
@@ -117,7 +146,7 @@ ob_start();
         <tr>
           <th>Concepto</th>
           <th>Categoría</th>
-          <th>Responsable</th>
+          <th>Para</th>
           <th>Tipo</th>
           <th>Quincena</th>
           <th>Fecha pago</th>
@@ -149,6 +178,7 @@ ob_start();
       <form id="formGasto" novalidate>
         <input type="hidden" id="fId" />
 
+        <!-- Concepto y Categoría -->
         <div class="form-row-2">
           <div class="form-group">
             <label class="dark" for="fConcepto">Concepto *</label>
@@ -168,9 +198,10 @@ ob_start();
           </div>
         </div>
 
-        <div class="form-row-3">
+        <!-- Valor y Tipo -->
+        <div class="form-row-2">
           <div class="form-group">
-            <label class="dark" for="fValor">Valor *</label>
+            <label class="dark" for="fValor">Valor total *</label>
             <div class="input-wrap">
               <span class="input-icon dark">💲</span>
               <input type="text" id="fValor" class="form-control light" placeholder="0" required />
@@ -187,32 +218,32 @@ ob_start();
               </select>
             </div>
           </div>
-          <div class="form-group">
-            <label class="dark" for="fResponsable">Responsable *</label>
-            <div class="input-wrap">
-              <span class="input-icon dark">👤</span>
-              <select id="fResponsable" class="form-control light" style="padding-left:2.75rem" required>
-                <option value="compartido">👫 Compartido</option>
-                <option value="carolina">👩 Carolina</option>
-                <option value="javier">👨 Javier</option>
-              </select>
+        </div>
+
+        <!-- Sección cuotas (visible solo si tipo = cuotas) -->
+        <div id="grupoCuotas" style="display:none">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="dark" for="fTotalCuotas">Número de cuotas *</label>
+              <div class="input-wrap">
+                <span class="input-icon dark">🔢</span>
+                <input type="number" id="fTotalCuotas" class="form-control light" placeholder="Ej: 12" min="2" max="60" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="dark">Valor por cuota</label>
+              <div class="input-wrap">
+                <span class="input-icon dark">📅</span>
+                <input type="text" id="fValorCuota" class="form-control light" placeholder="$ —" readonly
+                       style="background:var(--bg-body);cursor:default;font-weight:700;color:var(--primary)" />
+              </div>
             </div>
           </div>
+          <div class="info-box mb-1" id="resumenCuota" style="display:none"></div>
         </div>
 
-        <!-- Campo cuotas (visible solo si tipo = cuotas) -->
-        <div class="form-group" id="grupoCuotas" style="display:none">
-          <label class="dark" for="fTotalCuotas">Total de cuotas *</label>
-          <div class="input-wrap">
-            <span class="input-icon dark">🔢</span>
-            <input type="number" id="fTotalCuotas" class="form-control light" placeholder="Ej: 12" min="2" max="60" />
-          </div>
-          <small class="text-muted" style="font-size:.75rem;margin-top:.25rem;display:block">
-            El sistema creará automáticamente la cuota del siguiente mes.
-          </small>
-        </div>
-
-        <div class="form-row-2">
+        <!-- Fecha, Estado y Período -->
+        <div class="form-row-3">
           <div class="form-group">
             <label class="dark" for="fFecha">Fecha de pago *</label>
             <div class="input-wrap">
@@ -230,25 +261,65 @@ ob_start();
               </select>
             </div>
           </div>
-        </div>
-
-        <div class="form-group">
-          <label class="dark" for="fPeriodo">Período *</label>
-          <div class="input-wrap">
-            <span class="input-icon dark">📆</span>
-            <select id="fPeriodo" class="form-control light" style="padding-left:2.75rem" required>
-              <option value="">Selecciona...</option>
-            </select>
+          <div class="form-group">
+            <label class="dark" for="fPeriodo">Período *</label>
+            <div class="input-wrap">
+              <span class="input-icon dark">📆</span>
+              <select id="fPeriodo" class="form-control light" style="padding-left:2.75rem" required>
+                <option value="">Cargando...</option>
+              </select>
+            </div>
           </div>
         </div>
 
+        <!-- ── Distribución del gasto ─────────────────────────── -->
         <div class="form-group">
-          <label class="dark" for="fNotas">Notas</label>
-          <textarea id="fNotas" class="form-control light" style="padding-left:1rem;resize:vertical;min-height:72px" placeholder="Observaciones opcionales..."></textarea>
+
+          <!-- Toggle ¿Es un gasto compartido? -->
+          <div class="compartido-toggle" id="compartidoToggle">
+            <span class="toggle-icon">🤝</span>
+            <div class="toggle-info">
+              <div class="toggle-label">¿Es un gasto compartido?</div>
+              <div class="toggle-sub" id="compartidoSub">Solo tú lo asumes</div>
+            </div>
+            <div class="toggle-indicator"></div>
+          </div>
+
+          <!-- Panel visible solo si compartido = true -->
+          <div class="compartido-panel" id="compartidoPanel" style="display:none">
+            <div class="dist-tabs">
+              <button type="button" class="dist-tab active" data-dist="igual">⚖️ Partes iguales</button>
+              <button type="button" class="dist-tab" data-dist="personalizado">✏️ Personalizado</button>
+            </div>
+
+            <!-- Partes iguales: preview automático -->
+            <div class="dist-panel-content" id="panelIgual">
+              <div class="partes-iguales-preview" id="previewIgual">
+                <!-- Llenado dinámicamente -->
+              </div>
+            </div>
+
+            <!-- Personalizado: input por miembro -->
+            <div class="dist-panel-content" id="panelPersonalizado" style="display:none">
+              <div class="personalizado-rows" id="montoRows">
+                <!-- Llenado dinámicamente -->
+              </div>
+              <div class="total-row">
+                <span class="total-label">Total asignado</span>
+                <span class="total-valor pending" id="totalPersonalizado">$ —</span>
+              </div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Resumen cuota (si tipo = cuotas) -->
-        <div id="resumenCuota" class="info-box" style="display:none"></div>
+        <!-- Notas -->
+        <div class="form-group">
+          <label class="dark" for="fNotas">Notas</label>
+          <textarea id="fNotas" class="form-control light"
+                    style="padding-left:1rem;resize:vertical;min-height:64px"
+                    placeholder="Observaciones opcionales..."></textarea>
+        </div>
 
       </form>
     </div>
@@ -270,7 +341,10 @@ ob_start();
       <button class="modal-close" id="modalEliminarClose">✕</button>
     </div>
     <div class="modal-body">
-      <p style="color:var(--text-secondary)">¿Estás seguro de eliminar el gasto <strong id="elimConcepto"></strong>? Esta acción no se puede deshacer.</p>
+      <p style="color:var(--text-secondary)">
+        ¿Estás seguro de eliminar el gasto <strong id="elimConcepto"></strong>?
+        Esta acción no se puede deshacer.
+      </p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" id="btnCancelarEliminar">Cancelar</button>
@@ -282,88 +356,11 @@ ob_start();
 <?php
 $content = ob_get_clean();
 
-$extraCss = '<style>
-/* ── Gastos extras ──────────────────────────────────── */
-.stats-grid-4 { grid-template-columns: repeat(4, 1fr); }
-
-.filtros-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
-}
-.filtro-group  { display: flex; flex-direction: column; gap: 0.3rem; }
-.filtro-label  { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
-.filtro-select {
-  height: 36px;
-  padding: 0 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: var(--border-radius-sm);
-  font-size: 0.875rem;
-  color: var(--text-primary);
-  background: var(--bg-body);
-  cursor: pointer;
-  min-width: 130px;
-  outline: none;
-  transition: border-color var(--transition);
-}
-.filtro-select:focus { border-color: var(--primary); }
-
-/* Form layout */
-.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; }
-.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.875rem; }
-
-/* Info box cuota */
-.info-box {
-  background: var(--primary-light);
-  border: 1px solid rgba(108,99,255,0.2);
-  border-radius: var(--border-radius-sm);
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  color: var(--primary);
-  line-height: 1.6;
-}
-
-/* Badges tipo */
-.tipo-chip {
-  display: inline-block;
-  padding: 0.2rem 0.55rem;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .3px;
-}
-.tipo-fijo     { background: rgba(6,182,212,0.12);  color: #06b6d4; }
-.tipo-cuotas   { background: rgba(245,158,11,0.12); color: var(--warning); }
-.tipo-variable { background: var(--neutral-light);  color: var(--neutral); }
-
-/* Estado toggle */
-.estado-btn {
-  border: none; background: none; cursor: pointer;
-  padding: 0; line-height: 1;
-}
-
-/* Acciones */
-.acciones { display: flex; gap: 0.4rem; justify-content: center; }
-
-/* Quincena label */
-.quin-chip {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-@media (max-width: 900px) {
-  .stats-grid-4 { grid-template-columns: repeat(2, 1fr); }
-  .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
-}
-@media (max-width: 640px) {
-  .stats-grid-4 { grid-template-columns: 1fr; }
-}
-</style>';
-
-$extraJs = '<script>window.VISTA = ' . json_encode($vista) . ';</script>
+$extraJs = '<script>
+  window.VISTA_USUARIO_ID = ' . json_encode($vistaUsuarioId ?: null) . ';
+  window.CURRENT_USER_ID  = ' . json_encode(current_user_id()) . ';
+  window.IS_READ_ONLY     = ' . json_encode($isReadOnly) . ';
+</script>
 <script src="' . url('assets/js/gastos.js') . '"></script>';
 
 require_once __DIR__ . '/layout.php';

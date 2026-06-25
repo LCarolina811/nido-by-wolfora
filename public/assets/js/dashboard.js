@@ -15,9 +15,8 @@ function diasLabel(dias) {
   return            { text: 'En ' + dias + 'd', cls: 'badge badge-neutral' };
 }
 
-function responsableLabel(r) {
-  const map = { carolina: '👩 Carolina', javier: '👨 Javier', compartido: '👫 Compartido' };
-  return map[r] ?? r;
+function participantesLabel(p) {
+  return p ? '👥 ' + p : '—';
 }
 
 // ── Cargar KPIs ──────────────────────────────────────────────────
@@ -178,7 +177,7 @@ async function cargarVencimientos() {
         <div style="font-weight:600;font-size:.875rem">${r.cat_icono} ${escHtml(r.concepto)}</div>
         <div style="font-size:.75rem;color:var(--text-muted)">${escHtml(r.categoria)}</div>
       </td>
-      <td style="font-size:.8125rem">${responsableLabel(r.responsable)}</td>
+      <td style="font-size:.8125rem">${participantesLabel(r.participantes)}</td>
       <td style="font-size:.8125rem;white-space:nowrap">${fmtDate(r.fecha_pago)}</td>
       <td><span class="${chip.cls}">${chip.text}</span></td>
       <td class="text-right amount">${formatCOP(r.valor)}</td>
@@ -200,7 +199,7 @@ async function cargarRecientes() {
   gastos.forEach(g => {
     items.push({
       icono: g.cat_icono, color: g.cat_color,
-      concepto: g.concepto, meta: g.categoria + ' · ' + responsableLabel(g.responsable),
+      concepto: g.concepto, meta: g.categoria + ' · ' + (g.participantes || '—'),
       valor: '-' + formatCOP(g.valor), tipo: 'gasto',
     });
   });
