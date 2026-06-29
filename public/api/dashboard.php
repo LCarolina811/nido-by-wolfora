@@ -52,27 +52,27 @@ function get_resumen(int $nidoId): never
     $pid = $p['id'];
     $db = db();
 
-    $stmt = $db->prepare('SELECT COALESCE(SUM(valor), 0) AS total FROM ingresos WHERE periodo_id = :pid AND nido_id = :nido');
+    $stmt = $db->prepare('SELECT COALESCE(SUM(valor), 0) AS total FROM ingresos WHERE periodo_id = :pid AND nido_id = :nido AND deleted_at IS NULL');
     $stmt->execute([':pid' => $pid, ':nido' => $nidoId]);
     $ingresos = (float) $stmt->fetchColumn();
 
-    $stmt = $db->prepare('SELECT COALESCE(SUM(valor), 0) AS total FROM gastos WHERE periodo_id = :pid AND nido_id = :nido');
+    $stmt = $db->prepare('SELECT COALESCE(SUM(valor), 0) AS total FROM gastos WHERE periodo_id = :pid AND nido_id = :nido AND deleted_at IS NULL');
     $stmt->execute([':pid' => $pid, ':nido' => $nidoId]);
     $gastos_total = (float) $stmt->fetchColumn();
 
-    $stmt = $db->prepare("SELECT COALESCE(SUM(valor), 0) AS total FROM gastos WHERE periodo_id = :pid AND nido_id = :nido AND estado = 'pagado'");
+    $stmt = $db->prepare("SELECT COALESCE(SUM(valor), 0) AS total FROM gastos WHERE periodo_id = :pid AND nido_id = :nido AND estado = 'pagado' AND deleted_at IS NULL");
     $stmt->execute([':pid' => $pid, ':nido' => $nidoId]);
     $gastos_pagados = (float) $stmt->fetchColumn();
 
-    $stmt = $db->prepare("SELECT COALESCE(SUM(valor), 0) AS total FROM gastos WHERE periodo_id = :pid AND nido_id = :nido AND estado = 'pendiente'");
+    $stmt = $db->prepare("SELECT COALESCE(SUM(valor), 0) AS total FROM gastos WHERE periodo_id = :pid AND nido_id = :nido AND estado = 'pendiente' AND deleted_at IS NULL");
     $stmt->execute([':pid' => $pid, ':nido' => $nidoId]);
     $gastos_pendientes = (float) $stmt->fetchColumn();
 
-    $stmt = $db->prepare("SELECT COALESCE(SUM(monto_acumulado), 0) AS total FROM ahorros WHERE activo = 1 AND nido_id = :nido");
+    $stmt = $db->prepare("SELECT COALESCE(SUM(monto_acumulado), 0) AS total FROM ahorros WHERE activo = 1 AND nido_id = :nido AND deleted_at IS NULL");
     $stmt->execute([':nido' => $nidoId]);
     $total_ahorrado = (float) $stmt->fetchColumn();
 
-    $stmt = $db->prepare('SELECT COALESCE(SUM(monto), 0) AS total FROM presupuestos WHERE periodo_id = :pid AND nido_id = :nido');
+    $stmt = $db->prepare('SELECT COALESCE(SUM(monto), 0) AS total FROM presupuestos WHERE periodo_id = :pid AND nido_id = :nido AND deleted_at IS NULL');
     $stmt->execute([':pid' => $pid, ':nido' => $nidoId]);
     $presupuesto_total = (float) $stmt->fetchColumn();
 
@@ -85,6 +85,7 @@ function get_resumen(int $nidoId): never
            FROM gastos
           WHERE periodo_id = :pid AND nido_id = :nido
             AND estado = 'pendiente'
+            AND deleted_at IS NULL
             AND fecha_pago BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 5 DAY)"
     );
     $stmt->execute([':pid' => $pid, ':nido' => $nidoId]);
@@ -95,6 +96,7 @@ function get_resumen(int $nidoId): never
            FROM gastos
           WHERE periodo_id = :pid AND nido_id = :nido
             AND estado = 'pendiente'
+            AND deleted_at IS NULL
             AND fecha_pago < CURDATE()"
     );
     $stmt->execute([':pid' => $pid, ':nido' => $nidoId]);
@@ -124,7 +126,7 @@ function get_gastos_por_categoria(int $nidoId): never
         "SELECT c.nombre, c.color, COALESCE(SUM(g.valor), 0) AS total
            FROM gastos g
            JOIN categorias c ON g.categoria_id = c.id
-          WHERE g.periodo_id = :pid AND g.nido_id = :nido
+          WHERE g.periodo_id = :pid AND g.nido_id = :nido AND g.deleted_at IS NULL
           GROUP BY c.id, c.nombre, c.color
          HAVING total > 0
           ORDER BY total DESC
@@ -152,10 +154,10 @@ function get_evolucion_mensual(int $nidoId): never
                 COALESCE(
                     (SELECT SUM(i.valor)
                        FROM ingresos i
-                      WHERE i.periodo_id = p.id AND i.nido_id = :nido), 0
+                      WHERE i.periodo_id = p.id AND i.nido_id = :nido AND i.deleted_at IS NULL), 0
                 ) AS ingresos
            FROM periodos p
-           LEFT JOIN gastos g ON g.periodo_id = p.id AND g.nido_id = :nido2
+           LEFT JOIN gastos g ON g.periodo_id = p.id AND g.nido_id = :nido2 AND g.deleted_at IS NULL
           WHERE p.nido_id = :nido3
           GROUP BY p.id, p.anio, p.mes
           ORDER BY p.anio DESC, p.mes DESC
@@ -191,7 +193,7 @@ function get_proximos_vencimientos(int $nidoId): never
            FROM gastos g
            JOIN categorias c ON g.categoria_id = c.id
           WHERE g.periodo_id = :pid AND g.nido_id = :nido
-            AND g.estado = 'pendiente'
+            AND g.estado = 'pendiente' AND g.deleted_at IS NULL
           ORDER BY g.fecha_pago ASC
           LIMIT 10"
     );
@@ -211,7 +213,7 @@ function get_recientes(int $nidoId): never
                 $participantes AS participantes
            FROM gastos g
            JOIN categorias c ON g.categoria_id = c.id
-          WHERE g.periodo_id = :pid AND g.nido_id = :nido
+          WHERE g.periodo_id = :pid AND g.nido_id = :nido AND g.deleted_at IS NULL
           ORDER BY g.created_at DESC
           LIMIT 8"
     );
@@ -225,7 +227,7 @@ function get_recientes(int $nidoId): never
            FROM ingresos i
            JOIN categorias c ON i.categoria_id = c.id
            JOIN usuarios   u ON i.usuario_id   = u.id
-          WHERE i.periodo_id = :pid AND i.nido_id = :nido
+          WHERE i.periodo_id = :pid AND i.nido_id = :nido AND i.deleted_at IS NULL
           ORDER BY i.created_at DESC
           LIMIT 5"
     );

@@ -43,7 +43,7 @@ function vista_usuario_id(): ?int
 
 function filtros_sql(int $nidoId): array
 {
-    $where  = ['g.nido_id = :nido_id'];
+    $where  = ['g.nido_id = :nido_id', 'g.deleted_at IS NULL'];
     $params = [':nido_id' => $nidoId];
 
     if (!empty($_GET['periodo_id'])) {
@@ -302,7 +302,7 @@ function editar_gasto(int $nidoId): never
     $id = (int)($d['id'] ?? 0);
     if (!$id) json_error('ID inválido.');
 
-    $actual = db()->prepare('SELECT usuario_creador_id, nido_id FROM gastos WHERE id = :id');
+    $actual = db()->prepare('SELECT usuario_creador_id, nido_id FROM gastos WHERE id = :id AND deleted_at IS NULL');
     $actual->execute([':id' => $id]);
     $row = $actual->fetch();
 
@@ -386,20 +386,22 @@ function cambiar_estado(int $nidoId): never
         json_error('Solo el creador del gasto puede cambiar su estado.', 403);
     }
 
-    db()->prepare('UPDATE gastos SET estado = :estado WHERE id = :id')
+    db()->prepare('UPDATE gastos SET estado = :estado WHERE id = :id AND deleted_at IS NULL')
         ->execute([':estado' => $estado, ':id' => $id]);
 
     json_success(null, 'Estado actualizado.');
 }
 
-// ── Eliminar gasto ───────────────────────────────────────────────
+// ── Eliminar gasto (soft delete) ─────────────────────────────────
 
 function eliminar_gasto(int $nidoId): never
 {
     $id = (int)($_GET['id'] ?? 0);
     if (!$id) json_error('ID inválido.');
 
-    $stmt = db()->prepare('SELECT usuario_creador_id, nido_id FROM gastos WHERE id = :id');
+    $stmt = db()->prepare(
+        'SELECT usuario_creador_id, nido_id FROM gastos WHERE id = :id AND deleted_at IS NULL'
+    );
     $stmt->execute([':id' => $id]);
     $row = $stmt->fetch();
 
@@ -409,14 +411,21 @@ function eliminar_gasto(int $nidoId): never
     }
 
     $check = db()->prepare(
-        'SELECT COUNT(*) FROM gastos_cuotas WHERE gasto_origen_id = :id1 AND gasto_id != :id2'
+        'SELECT COUNT(*) FROM gastos_cuotas
+          JOIN gastos g ON g.id = gastos_cuotas.gasto_id
+         WHERE gastos_cuotas.gasto_origen_id = :id1
+           AND gastos_cuotas.gasto_id != :id2
+           AND g.deleted_at IS NULL'
     );
     $check->execute([':id1' => $id, ':id2' => $id]);
     if ((int)$check->fetchColumn() > 0) {
-        json_error('Este gasto tiene cuotas replicadas en otros meses. Elimina las cuotas individualmente.');
+        json_error('Este gasto tiene cuotas activas en otros meses. Elimínalas individualmente.');
     }
 
-    db()->prepare('DELETE FROM gastos WHERE id = :id')->execute([':id' => $id]);
+    db()->prepare(
+        'UPDATE gastos SET deleted_at = NOW(), deleted_by = :uid WHERE id = :id'
+    )->execute([':uid' => current_user_id(), ':id' => $id]);
+
     json_success(null, 'Gasto eliminado.');
 }
 
